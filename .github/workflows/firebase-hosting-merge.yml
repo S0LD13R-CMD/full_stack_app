@@ -7,20 +7,44 @@ on:
     branches:
       - main
 jobs:
-  build_and_deploy:
+  build_and_preview:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the repository
       - uses: actions/checkout@v4
-      - name: Change to the correct directory
-        run: cd my-frontend
+
+      # Debug the current directory to ensure `my-frontend` is present
+      - name: Debug Directory
+        run: |
+          echo "Current Directory:"
+          pwd
+          echo "Contents:"
+          ls -la
+
+      # Set up Node.js environment with caching
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+
+      # Move to the `my-frontend` directory for the next steps
+      - name: Change to Frontend Directory
+        working-directory: my-frontend
+        run: |
+          echo "Changing directory to my-frontend"
+          pwd
+
+      # Install dependencies and build the project
+      - name: Install Dependencies and Build
+        working-directory: my-frontend
+        run: |
+          npm ci
+          npm run build
+
+      # Deploy to Firebase Hosting
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FULL_STACK_APP_127BE }}
-          channelId: live
           projectId: full-stack-app-127be
