@@ -1,5 +1,5 @@
 name: Deploy to Firebase Hosting on PR
-on: pull_request  # or push to main for merge file
+on: pull_request
 permissions:
   checks: write
   contents: read
@@ -25,16 +25,9 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Move to the `my-frontend` directory for the next steps
-      - name: Change to Frontend Directory
-        working-directory: my-frontend
-        run: |
-          echo "Changing directory to my-frontend"
-          pwd
-
-      # Install dependencies and build the project
+      # Install dependencies and build the project (inside `my-frontend`)
       - name: Install Dependencies and Build
-        working-directory: my-frontend
+        working-directory: my-frontend  # Ensure npm runs in the correct directory
         run: |
           npm ci
           npm run build
