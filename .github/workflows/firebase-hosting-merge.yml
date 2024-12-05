@@ -22,16 +22,22 @@ jobs:
           ls -la
 
       # Set up Node.js environment with caching
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # Ensure npm runs inside the `my-frontend` directory
-      - name: Install Dependencies and Build
-        working-directory: my-frontend  # Ensure npm runs in the correct directory
+      # Install dependencies inside `my-frontend`
+      - name: Install dependencies
         run: |
-          npm ci
+          cd my-frontend  # Navigate to the correct folder
+          npm ci  # Use npm ci to install the exact versions specified in package-lock.json
+
+      # Build the project
+      - name: Build the project
+        run: |
+          cd my-frontend  # Ensure npm run build is run in the correct directory
           npm run build
 
       # Deploy to Firebase Hosting
