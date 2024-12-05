@@ -25,7 +25,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Install dependencies and build the project (inside `my-frontend`)
+      # Ensure npm runs inside the `my-frontend` directory
       - name: Install Dependencies and Build
         working-directory: my-frontend  # Ensure npm runs in the correct directory
         run: |
