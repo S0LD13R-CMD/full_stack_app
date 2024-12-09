@@ -9,6 +9,8 @@ jobs:
     steps:
       # Checkout the repository
       - uses: actions/checkout@v4
+        with:
+          path: .
 
       # Debug the root directory and subdirectories
       - name: Debug Directory
@@ -26,6 +28,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: ./my-frontend/package-lock.json
 
       # Explicitly set working directory for dependency installation
       - name: Install Dependencies
