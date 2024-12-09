@@ -21,22 +21,22 @@ jobs:
           echo "Contents of my-frontend:"
           ls -la ./my-frontend
 
-      # Set up Node.js environment
+      # Set up Node.js environment with caching
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # Explicitly set the working directory for dependency installation
-      - name: Install dependencies
-        working-directory: ./my-frontend
+      # Explicitly set working directory for dependency installation
+      - name: Install Dependencies
         run: npm ci
+        working-directory: ./my-frontend
 
       # Build the project in the correct directory
-      - name: Build the project
-        working-directory: ./my-frontend
+      - name: Build Project
         run: npm run build
+        working-directory: ./my-frontend
 
       # Deploy to Firebase Hosting
       - name: Deploy to Firebase Hosting
