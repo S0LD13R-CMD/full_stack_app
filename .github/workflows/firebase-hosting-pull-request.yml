@@ -11,32 +11,35 @@ jobs:
       # Checkout the repository
       - uses: actions/checkout@v4
 
-      # Debug the current directory to ensure `my-frontend` is present
+      # Debug the current directory to verify structure
       - name: Debug Directory
         run: |
           echo "Current Directory:"
           pwd
-          echo "Contents:"
+          echo "Contents of Current Directory:"
           ls -la
 
-      # Set up Node.js environment with caching
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Set up Node.js with caching
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # Install dependencies inside `my-frontend`
-      - name: Install dependencies
+      # Debug the contents of `my-frontend` folder
+      - name: Debug my-frontend Folder
         run: |
-          cd my-frontend  # Navigate to the correct folder
-          npm ci  # Use npm ci to install the exact versions specified in package-lock.json
+          echo "Contents of my-frontend:"
+          ls -la my-frontend
 
-      # Build the project
-      - name: Build the project
-        run: |
-          cd my-frontend  # Ensure npm run build is run in the correct directory
-          npm run build
+      # Navigate to `my-frontend` and install dependencies
+      - name: Install Dependencies
+        working-directory: my-frontend
+        run: npm ci
+
+      # Build the frontend
+      - name: Build Frontend
+        working-directory: my-frontend
+        run: npm run build
 
       # Deploy to Firebase Hosting
       - name: Deploy to Firebase Hosting
