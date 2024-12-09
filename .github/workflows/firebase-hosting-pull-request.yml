@@ -21,30 +21,20 @@ jobs:
           echo "Contents of my-frontend:"
           ls -la ./my-frontend
 
-      # Verify Node.js environment setup
+      # Set up Node.js environment
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # Add explicit path checks before running npm commands
-      - name: Debug Path Before Install
-        run: |
-          echo "Node.js Version:"
-          node --version
-          echo "NPM Version:"
-          npm --version
-          echo "Path Check for package-lock.json:"
-          if [ -f "./my-frontend/package-lock.json" ]; then echo "package-lock.json exists in ./my-frontend"; else echo "package-lock.json NOT found"; fi
-
-      # Install dependencies explicitly in my-frontend
-      - name: Install Dependencies
+      # Explicitly set the working directory for dependency installation
+      - name: Install dependencies
         working-directory: ./my-frontend
         run: npm ci
 
-      # Build the project
-      - name: Build the Project
+      # Build the project in the correct directory
+      - name: Build the project
         working-directory: ./my-frontend
         run: npm run build
 
