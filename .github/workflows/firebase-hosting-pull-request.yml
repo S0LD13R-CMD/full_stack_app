@@ -11,34 +11,31 @@ jobs:
       # Checkout the repository
       - uses: actions/checkout@v4
 
-      # Debug the current directory to verify structure
+      # Debug directory structure
       - name: Debug Directory
         run: |
           echo "Current Directory:"
           pwd
           echo "Contents of Current Directory:"
           ls -la
+          echo "Contents of my-frontend Directory:"
+          ls -la my-frontend || echo "my-frontend directory not found"
 
-      # Set up Node.js with caching
-      - uses: actions/setup-node@v4
+      # Set up Node.js environment with caching
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # Debug the contents of `my-frontend` folder
-      - name: Debug my-frontend Folder
-        run: |
-          echo "Contents of my-frontend:"
-          ls -la my-frontend
-
-      # Navigate to `my-frontend` and install dependencies
-      - name: Install Dependencies
-        working-directory: my-frontend
+      # Install dependencies
+      - name: Install dependencies
+        working-directory: my-frontend  # Explicitly use working-directory
         run: npm ci
 
-      # Build the frontend
-      - name: Build Frontend
-        working-directory: my-frontend
+      # Build the project
+      - name: Build the project
+        working-directory: my-frontend  # Ensure build runs in the correct directory
         run: npm run build
 
       # Deploy to Firebase Hosting

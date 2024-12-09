@@ -10,7 +10,7 @@ jobs:
       # Checkout the repository
       - uses: actions/checkout@v4
 
-      # Debug directory structure to ensure correct files are present
+      # Debug directory structure
       - name: Debug Directory
         run: |
           echo "Current Directory:"
@@ -18,7 +18,7 @@ jobs:
           echo "Contents of Current Directory:"
           ls -la
           echo "Contents of my-frontend Directory:"
-          ls -la my-frontend
+          ls -la my-frontend || echo "my-frontend directory not found"
 
       # Set up Node.js environment with caching
       - name: Setup Node.js
@@ -27,14 +27,14 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Install dependencies inside `my-frontend`
+      # Install dependencies
       - name: Install dependencies
-        working-directory: my-frontend
-        run: npm ci  # Use npm ci to install the exact versions specified in package-lock.json
+        working-directory: my-frontend  # Explicitly use working-directory
+        run: npm ci
 
       # Build the project
       - name: Build the project
-        working-directory: my-frontend
+        working-directory: my-frontend  # Ensure build runs in the correct directory
         run: npm run build
 
       # Deploy to Firebase Hosting
