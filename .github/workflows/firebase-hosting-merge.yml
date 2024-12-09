@@ -10,31 +10,41 @@ jobs:
       # Checkout the repository
       - uses: actions/checkout@v4
 
-      # Debug the current directory
+      # Debug the root directory and subdirectories
       - name: Debug Directory
         run: |
-          echo "Current Directory:"
+          echo "Root Directory (pwd):"
           pwd
-          echo "Contents of root:"
+          echo "Root Directory Contents:"
           ls -la
           echo "Contents of my-frontend:"
-          ls -la my-frontend
+          ls -la ./my-frontend
 
-      # Set up Node.js environment with caching
+      # Verify Node.js environment setup
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # Install dependencies in `my-frontend`
-      - name: Install dependencies
-        working-directory: my-frontend  # Specify the correct working directory
+      # Add explicit path checks before running npm commands
+      - name: Debug Path Before Install
+        run: |
+          echo "Node.js Version:"
+          node --version
+          echo "NPM Version:"
+          npm --version
+          echo "Path Check for package-lock.json:"
+          if [ -f "./my-frontend/package-lock.json" ]; then echo "package-lock.json exists in ./my-frontend"; else echo "package-lock.json NOT found"; fi
+
+      # Install dependencies explicitly in my-frontend
+      - name: Install Dependencies
+        working-directory: ./my-frontend
         run: npm ci
 
-      # Build the project in `my-frontend`
-      - name: Build the project
-        working-directory: my-frontend  # Ensure the build runs in the correct directory
+      # Build the project
+      - name: Build the Project
+        working-directory: ./my-frontend
         run: npm run build
 
       # Deploy to Firebase Hosting
