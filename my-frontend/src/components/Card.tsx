@@ -11,7 +11,7 @@ interface CardProps {
         <div className="card-body">
           <h2 className="card-title">{title}</h2>
           <p>Author: {author}</p>
-          <p>Price: ${price}</p>
+          <p>Price: £{price}</p>
           <div className="card-actions justify-end">
             <button className="btn btn-accent">View</button>
           </div>
