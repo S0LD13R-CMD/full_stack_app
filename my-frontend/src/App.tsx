@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import './index.css';
-import './App.css';
+import React, { useState } from "react";
+import "./index.css";
 
 interface Book {
   id: number;
@@ -10,81 +9,81 @@ interface Book {
 }
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'owned' | 'to-buy'>('owned');
+  const [view, setView] = useState<"owned" | "to-buy">("owned");
   const [booksOwned, setBooksOwned] = useState<Book[]>([]);
   const [booksToBuy, setBooksToBuy] = useState<Book[]>([]);
   const [bookInput, setBookInput] = useState<Book>({
     id: Date.now(),
-    name: '',
-    author: '',
+    name: "",
+    author: "",
     price: 0,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setBookInput((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? e.target.checked : value,
+      [name]: value,
     }));
   };
 
   const handleAddBook = () => {
-    if (view === 'owned') {
+    if (view === "owned") {
       setBooksOwned((prev) => [...prev, { ...bookInput, id: Date.now() }]);
     } else {
       setBooksToBuy((prev) => [...prev, { ...bookInput, id: Date.now() }]);
     }
-    setBookInput({ id: Date.now(), name: '', author: '', price: 0 });
+    setBookInput({ id: Date.now(), name: "", author: "", price: 0 });
   };
 
   return (
-    <div className="bg-base-200 min-h-screen p-6">
-      <header className="navbar bg-base-100 shadow-md mb-6">
-        <div className="flex-1">
-          <a className="btn btn-ghost normal-case text-xl">Book Manager</a>
+    <div className="min-h-screen flex flex-col">
+      {/* Main Content */}
+      <div className="flex h-screen p-4 gap-4">
+      {/* Left Half - Book List */}
+      <div className="w-1/2 p-4 bg-base-200 border border-primary rounded-lg shadow-md overflow-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Books List</h2>
+          <div className="flex gap-2">
+          <button
+            className={`btn ${view === 'owned' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setView('owned')}
+          >
+            Books Owned
+          </button>
+          <button
+            className={`btn ${view === 'to-buy' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setView('to-buy')}
+          >
+            Books to Buy
+          </button>
+          </div>
         </div>
-      </header>
-
-      <div className="mb-6 text-center">
-        <button
-          className={`btn ${view === 'owned' ? 'btn-primary' : 'btn-ghost'} mr-2`}
-          onClick={() => setView('owned')}
-        >
-          Books Owned
-        </button>
-        <button
-          className={`btn ${view === 'to-buy' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setView('to-buy')}
-        >
-          Books to Buy
-        </button>
+        <ul className="space-y-4">
+          {(view === 'owned' ? booksOwned : booksToBuy).map((book) => (
+            <li
+              key={book.id}
+              className="p-4 bg-primary text-primary-content rounded-lg shadow-md"
+            >
+              <h3 className="text-lg font-semibold">{book.name}</h3>
+              <p className="text-sm">Author: {book.author}</p>
+              <p className="text-sm">Price: £{book.price}</p>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <div className="flex flex-wrap gap-6">
-        {/* Books List */}
-        <div className="flex-1 bg-base-100 shadow-md rounded-lg p-4 border">
-          <h2 className="text-2xl font-semibold mb-4">
-            {view === 'owned' ? 'Books Owned' : 'Books to Buy'}
-          </h2>
-          {view === 'owned' && booksOwned.length === 0 && <p>No books owned yet.</p>}
-          {view === 'to-buy' && booksToBuy.length === 0 && <p>No books to buy yet.</p>}
-          <ul className="space-y-4">
-            {(view === 'owned' ? booksOwned : booksToBuy).map((book) => (
-              <li
-                key={book.id}
-                className="p-4 bg-base-100 text-base-content rounded-lg shadow-lg border"
-              >
-                <h3 className="text-lg font-semibold">{book.name}</h3>
-                <p className="text-sm">Author: {book.author}</p>
-                <p className="text-sm">Price: £{book.price}</p>
-              </li>
-            ))}
-          </ul>
+      {/* Right Half */}
+      <div className="w-1/2 flex flex-col gap-4">
+        {/* Top Right - "To Read Next" */}
+        <div className="flex-1 p-4 bg-base-200 border border-primary rounded-lg shadow-md overflow-auto">
+          <h2 className="text-xl font-bold mb-4">To Read Next</h2>
+          <p className="text-gray-600">Your "To Read Next" list will appear here.</p>
         </div>
 
-        {/* Add Book Form */}
-        <div className="w-full sm:w-1/3 bg-base-100 shadow-md rounded-lg p-4 border">
-          <h2 className="text-2xl font-semibold mb-4">Add a Book</h2>
+        {/* Bottom Right - Input Field */}
+        <div className="flex-1 p-4 bg-base-200 border border-primary rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-4">Add a Book</h2>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -94,7 +93,7 @@ const App: React.FC = () => {
           >
             {/* Book Name */}
             <div className="form-control">
-              <label className="label">
+              <label className="label mb-2">
                 <span className="label-text">Book Name</span>
               </label>
               <input
@@ -108,7 +107,7 @@ const App: React.FC = () => {
             </div>
             {/* Author */}
             <div className="form-control">
-              <label className="label">
+              <label className="label mb-2">
                 <span className="label-text">Author</span>
               </label>
               <input
@@ -122,7 +121,7 @@ const App: React.FC = () => {
             </div>
             {/* Price */}
             <div className="form-control">
-              <label className="label">
+              <label className="label mb-2">
                 <span className="label-text">Price</span>
               </label>
               <input
@@ -141,6 +140,7 @@ const App: React.FC = () => {
           </form>
         </div>
       </div>
+    </div>
     </div>
   );
 };
