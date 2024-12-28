@@ -146,40 +146,55 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       {!isAuthenticated ? (
         <div className="flex justify-center items-center h-screen">
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-4 p-4 bg-base-200 border rounded-lg shadow-md">
-            <h1 className="text-2xl font-bold mb-4">Book Collection Manager</h1>
-            <div className="form-control">
-              <label className="label mb-2">Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input input-bordered" required />
-            </div>
-            <div className="form-control">
-              <label className="label mb-2">Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input input-bordered" required />
-            </div>
-            <div className="flex justify-between items-center">
-              <button type="submit" className="btn btn-accent">Login</button>
-              <button onClick={() => setIsRegistering(true)} className="btn btn-secondary">Register</button>
-            </div>
-          </form>
-          {isRegistering && (
-            <form onSubmit={handleRegister} className="space-y-4 p-4 bg-base-200 border rounded-lg shadow-md mt-4">
-              {/* Registration Form */}
-              <div className="form-control">
-                <label className="label mb-2">Email</label>
-                <input type="email" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} className="input input-bordered" required />
-              </div>
-              <div className="form-control">
-                <label className="label mb-2">Password</label>
-                <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className="input input-bordered" required />
-              </div>
-              <div className="flex justify-between items-center">
-                <button type="submit" className="btn btn-accent">Register</button>
-                <button onClick={() => setIsRegistering(false)} className="btn btn-secondary">Already have an account? Login</button>
-              </div>
-            </form>
-          )}
-        </div>
+        <form
+          onSubmit={isRegistering ? handleRegister : handleLogin}
+          className="space-y-4 p-4 bg-base-200 border rounded-lg shadow-md"
+        >
+          <h1 className="text-2xl font-bold mb-4">Book Collection Manager</h1>
+          <div className="form-control">
+            <label className="label mb-2">Email</label>
+            <input
+              type="email"
+              value={isRegistering ? registerEmail : email}
+              onChange={(e) =>
+                isRegistering
+                  ? setRegisterEmail(e.target.value)
+                  : setEmail(e.target.value)
+              }
+              className="input input-bordered"
+              required
+            />
+          </div>
+          <div className="form-control">
+            <label className="label mb-2">Password</label>
+            <input
+              type="password"
+              value={isRegistering ? registerPassword : password}
+              onChange={(e) =>
+                isRegistering
+                  ? setRegisterPassword(e.target.value)
+                  : setPassword(e.target.value)
+              }
+              className="input input-bordered"
+              required
+            />
+          </div>
+          <button type="submit" className="btn btn-accent w-full">
+            {isRegistering ? "Register" : "Login"}
+          </button>
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => setIsRegistering(!isRegistering)}
+              className="btn btn-secondary btn-outline w-full"
+            >
+              {isRegistering
+                ? "Already have an account? Login"
+                : "Don't have an account? Register"}
+            </button>
+          </div>
+        </form>
+      </div>
     ) : (
         <div className="flex h-screen p-4 gap-4">
           {/* Left Half - Book List */}
@@ -234,13 +249,13 @@ const App: React.FC = () => {
                 placeholder="Type your notes here..."
                 value={toReadNotes}
                 onChange={(e) => setToReadNotes(e.target.value)}
-                style={{ minHeight: "277px" }} // Ensures a consistent minimum height
+                style={{ minHeight: "265px" }} // Ensures a consistent minimum height
               />
             </div>
 
             {/* Bottom Right - Toggle Buttons and Input Fields */}
-            <div className="p-4 bg-base-200 border border-primary rounded-lg shadow-md">
-              <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div className="p-4 bg-base-200 border border-primary rounded-lg shadow-md space-y-5">
+              <form onSubmit={handleFormSubmit} className="space-y-3">
                 <div className="form-control">
                   <label className="label">Book Title</label>
                   <input
@@ -320,7 +335,7 @@ const App: React.FC = () => {
                 </button>
               </form>
 
-              <button onClick={handleLogout} className="btn btn-danger mt-4 w-full">
+              <button onClick={handleLogout} className="btn btn-secondary btn-outline w-full p-4">
                 Logout
               </button>
             </div>
