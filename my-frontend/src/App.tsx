@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
-import { app } from "./firebase-config";
+import { app, db } from "./firebase-config";
+import { doc, setDoc, getDoc, collection, deleteDoc } from "firebase/firestore";
 
 interface Book {
   id: number;
   name: string;
   price: number;
-  author?: string; // Author is optional
+  author?: string;
 }
 
 const App: React.FC = () => {
@@ -35,12 +36,19 @@ const App: React.FC = () => {
   const auth = getAuth(app); // Initialize Firebase Authentication
 
   useEffect(() => {
-    // Check if the user is logged in when the app loads
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setIsAuthenticated(true); // User is logged in
+        setIsAuthenticated(true);
+  
+        // Load user data
+        const userData = await loadUserData(user.uid);
+        if (userData) {
+          setBooksOwned(userData.booksOwned || []);
+          setBooksToBuy(userData.booksToBuy || []);
+          setToReadNotes(userData.notes || "");
+        }
       } else {
-        setIsAuthenticated(false); // User is not logged in
+        setIsAuthenticated(false);
       }
     });
   }, [auth]);
@@ -78,36 +86,103 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleAddBook = () => {
-    if (view === "owned") {
-      setBooksOwned((prev) => [...prev, { ...bookInput, id: Date.now() }]);
-    } else {
-      setBooksToBuy((prev) => [...prev, { ...bookInput, id: Date.now() }]);
+  const handleAddBook = async () => {
+    if (auth.currentUser) {
+      const user = auth.currentUser;
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let existingBooksOwned = [];
+      let existingBooksToBuy = [];
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        existingBooksOwned = userData.booksOwned || [];
+        existingBooksToBuy = userData.booksToBuy || [];
+      }
+
+      const newBook = { ...bookInput, id: Date.now() };
+      const updatedBooks = view === "owned"
+        ? [...existingBooksOwned, newBook]
+        : [...existingBooksToBuy, newBook];
+
+      if (view === "owned") {
+        setBooksOwned(updatedBooks);
+      } else {
+        setBooksToBuy(updatedBooks);
+      }
+
+      // Save updated data to Firestore
+      await setDoc(userDocRef, {
+        booksOwned: view === "owned" ? updatedBooks : existingBooksOwned,
+        booksToBuy: view === "to-buy" ? updatedBooks : existingBooksToBuy,
+        notes: toReadNotes
+      });
+
+      setBookInput({ id: Date.now(), name: "", price: 0, author: "" });
     }
-    setBookInput({ id: Date.now(), name: "", price: 0, author: "" });
   };
 
-  const handleAddJournal = () => {
-    const volumes = volumeRange.end - volumeRange.start + 1; // Calculate the number of volumes
+  const handleAddJournal = async () => {
+    const volumes = volumeRange.end - volumeRange.start + 1;
     const books: Book[] = [];
 
     for (let i = 0; i < volumes; i++) {
-      books.push({
+      const book = {
         ...bookInput,
         id: Date.now() + i,
         name: `${bookInput.name} - Volume ${volumeRange.start + i}`,
-        author: bookInput.author, // Ensure author is included for journals
-      });
+        author: bookInput.author,
+        isJournal: true,
+      };
+      books.push(book);
     }
 
+    // Update local state
     if (view === "owned") {
       setBooksOwned((prev) => [...prev, ...books]);
     } else {
       setBooksToBuy((prev) => [...prev, ...books]);
     }
 
+    // Save updated data to Firestore
+    if (auth.currentUser) {
+      const user = auth.currentUser;
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let existingBooksOwned = [];
+      let existingBooksToBuy = [];
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        existingBooksOwned = userData.booksOwned || [];
+        existingBooksToBuy = userData.booksToBuy || [];
+      }
+
+      const updatedBooksOwned = view === "owned" ? [...existingBooksOwned, ...books] : existingBooksOwned;
+      const updatedBooksToBuy = view === "to-buy" ? [...existingBooksToBuy, ...books] : existingBooksToBuy;
+
+      await setDoc(userDocRef, {
+        booksOwned: updatedBooksOwned,
+        booksToBuy: updatedBooksToBuy,
+        notes: toReadNotes
+      });
+    }
+
+    // Reset form input fields
     setBookInput({ id: Date.now(), name: "", price: 0, author: "" });
-    setVolumeRange({ start: 1, end: 1 }); // Reset volume range
+    setVolumeRange({ start: 1, end: 1 });
+  };
+
+  const handleNoteChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const updatedNotes = e.target.value;
+    setToReadNotes(updatedNotes);
+  
+    // Save notes to Firestore
+    if (auth.currentUser) {
+      await saveUserData(auth.currentUser.uid, booksOwned, booksToBuy, updatedNotes);
+    }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -130,72 +205,141 @@ const App: React.FC = () => {
       });
   };
 
-  const handleDeleteBook = (id: number) => {
-    if (view === "owned") {
-      setBooksOwned((prev) => prev.filter((book) => book.id !== id));
-    } else {
-      setBooksToBuy((prev) => prev.filter((book) => book.id !== id));
+  const handleDeleteBook = async (id: number) => {
+    if (auth.currentUser) {
+      const user = auth.currentUser;
+      try {
+        // Delete from individual books collection
+        const bookRef = doc(collection(db, 'users', user.uid, 'books'), `book-${id}`);
+        await deleteDoc(bookRef);
+
+        // Update local state
+        if (view === "owned") {
+          setBooksOwned((prev) => prev.filter(book => book.id !== id));
+        } else {
+          setBooksToBuy((prev) => prev.filter(book => book.id !== id));
+        }
+
+        // Update the main user document
+        await setDoc(doc(db, "users", user.uid), {
+          booksOwned: view === "owned" ? booksOwned.filter(book => book.id !== id) : booksOwned,
+          booksToBuy: view === "to-buy" ? booksToBuy.filter(book => book.id !== id) : booksToBuy,
+          notes: toReadNotes
+        });
+
+        console.log(`Book with ID ${id} deleted successfully`);
+      } catch (error) {
+        console.error("Error deleting book:", error);
+      }
     }
   };
+  
   const totalValue = (view === "owned" ? booksOwned : booksToBuy).reduce(
     (sum, book) => sum + book.price,
     0
   );
 
+  // Save user data (books and notes)
+const saveUserData = async (uid: string, booksOwned: Book[], booksToBuy: Book[], notes: string) => {
+  try {
+    await setDoc(doc(db, "users", uid), {
+      booksOwned,
+      booksToBuy,
+      notes,
+    });
+  } catch (error) {
+    console.error("Error saving user data:", error);
+  }
+};
+
+// Load user data
+const loadUserData = async (uid: string) => {
+  try {
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return docSnap.data();
+    } else {
+      console.log("No user data found!");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error loading user data:", error);
+    return null;
+  }
+};
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col px-8 py-4">
       {!isAuthenticated ? (
-        <div className="flex justify-center items-center h-screen">
-        <form
-          onSubmit={isRegistering ? handleRegister : handleLogin}
-          className="space-y-4 p-4 bg-base-200 border rounded-lg shadow-md"
-        >
-          <h1 className="text-2xl font-bold mb-4">Book Collection Manager</h1>
-          <div className="form-control">
-            <label className="label mb-2">Email</label>
-            <input
-              type="email"
-              value={isRegistering ? registerEmail : email}
-              onChange={(e) =>
-                isRegistering
-                  ? setRegisterEmail(e.target.value)
-                  : setEmail(e.target.value)
-              }
-              className="input input-bordered"
-              required
-            />
-          </div>
-          <div className="form-control">
-            <label className="label mb-2">Password</label>
-            <input
-              type="password"
-              value={isRegistering ? registerPassword : password}
-              onChange={(e) =>
-                isRegistering
-                  ? setRegisterPassword(e.target.value)
-                  : setPassword(e.target.value)
-              }
-              className="input input-bordered"
-              required
-            />
-          </div>
-          <button type="submit" className="btn btn-accent w-full">
-            {isRegistering ? "Register" : "Login"}
-          </button>
-          <div className="text-center mt-4">
-            <button
-              type="button"
-              onClick={() => setIsRegistering(!isRegistering)}
-              className="btn btn-secondary btn-outline w-full"
+        <div className="flex justify-center items-center h-screen space-x-8">
+          {/* Login Form */}
+          <div className="p-8 bg-base-200 border-primary border-2 rounded-lg shadow-md w-1/2">
+            <form
+              onSubmit={isRegistering ? handleRegister : handleLogin}
+              className="space-y-4"
             >
-              {isRegistering
-                ? "Already have an account? Login"
-                : "Don't have an account? Register"}
-            </button>
+              <h1 className="text-2xl font-bold mb-4">Book Collection Manager</h1>
+              <div className="form-control">
+                <label className="label mb-2">Email</label>
+                <input
+                  type="email"
+                  value={isRegistering ? registerEmail : email}
+                  onChange={(e) =>
+                    isRegistering
+                      ? setRegisterEmail(e.target.value)
+                      : setEmail(e.target.value)
+                  }
+                  className="input input-bordered"
+                  required
+                />
+              </div>
+              <div className="form-control">
+                <label className="label mb-2">Password</label>
+                <input
+                  type="password"
+                  value={isRegistering ? registerPassword : password}
+                  onChange={(e) =>
+                    isRegistering
+                      ? setRegisterPassword(e.target.value)
+                      : setPassword(e.target.value)
+                  }
+                  className="input input-bordered"
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-accent w-full">
+                {isRegistering ? "Register" : "Login"}
+              </button>
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsRegistering(!isRegistering)}
+                  className="btn btn-secondary btn-outline w-full"
+                >
+                  {isRegistering
+                    ? "Already have an account? Login"
+                    : "Don't have an account? Register"}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
-    ) : (
+
+          {/* Website Details */}
+          <div className="p-5 bg-base-200 border-primary border-2 rounded-lg shadow-md w-1/2">
+            <h1 className="text-primary text-center text-2xl font-bold mb-6">Welcome to the Book Collection Manager! Here you can:</h1>
+            <ol className="text-primary list-decimal list-inside ml-9">
+              <li>Manage your personal library</li>
+              <li>Keep track of your library's value</li>
+              <li>Keep track of books you have bought</li>
+              <li>Keep track of books you want to buy</li>
+              <li>Keep notes on books you want to read</li>
+            </ol>
+            <h2 className="text-primary text-center text-xl font-bold mt-6">Enjoy organizing your reading journey with ease!</h2>
+          </div>
+        </div>
+      ) : (
         <div className="flex h-screen p-4 gap-4">
           {/* Left Half - Book List */}
           <div className="w-1/2 p-4 bg-base-200 border border-primary rounded-lg shadow-md overflow-auto max-h-screen scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-200">
@@ -224,7 +368,8 @@ const App: React.FC = () => {
               {(view === "owned" ? booksOwned : booksToBuy).map((book) => (
                 <li
                   key={book.id}
-                  className="flex justify-between items-center bg-primary text-primary-content p-3 mb-2 rounded-md"                >
+                  className="flex justify-between items-center p-3 mb-2 rounded-md bg-primary text-primary-content"
+                >
                   <div>
                     <p className="font-bold">{book.name}</p>
                     <p>Price: £{book.price.toFixed(2)}</p>
@@ -245,10 +390,10 @@ const App: React.FC = () => {
             {/* Top Right - To-read Section (Book List View) */}
             <div className="p-4 bg-base-200 border border-primary rounded-lg shadow-md flex-1 overflow-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-200">
               <textarea
+                onChange={handleNoteChange}
                 className="textarea textarea-bordered w-full resize-none"
                 placeholder="Type your notes here..."
                 value={toReadNotes}
-                onChange={(e) => setToReadNotes(e.target.value)}
                 style={{ minHeight: "265px" }} // Ensures a consistent minimum height
               />
             </div>
