@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
 import { app, db } from "./firebase-config";
-import { doc, setDoc, getDoc, collection, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, deleteDoc, updateDoc } from "firebase/firestore";
 import "./index.css";
 
 interface Book {
@@ -35,6 +35,8 @@ const App: React.FC = () => {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [filterTag, setFilterTag] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const auth = getAuth(app); // Initialize Firebase Authentication
 
@@ -288,6 +290,43 @@ const loadUserData = async (uid: string) => {
     });
   };
 
+  const handleBookClick = (book: Book) => {
+    setSelectedBook(book);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveBook = async (updatedBook: Book) => {
+    if (!auth.currentUser) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    // Update the book in the local state
+    setBooksOwned((prev) => prev.map((b) => (b.id === updatedBook.id ? updatedBook : b)));
+    
+    // Update the book directly under the user document
+    try {
+      const bookRef = doc(db, "users", auth.currentUser.uid);
+      const userDoc = await getDoc(bookRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const updatedBooksOwned = userData.booksOwned.map((b: Book) =>
+          b.id === updatedBook.id ? updatedBook : b
+        );
+
+        await updateDoc(bookRef, { booksOwned: updatedBooksOwned });
+        console.log("Book updated successfully");
+      } else {
+        console.error("User document not found");
+      }
+    } catch (error) {
+      console.error("Error updating book:", error);
+    }
+
+    setIsModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col px-8 py-4">
       {!isAuthenticated ? (
@@ -354,7 +393,7 @@ const loadUserData = async (uid: string) => {
               <li>Keep track of books you want to buy</li>
               <li>Keep notes on books you want to read</li>
             </ol>
-            <h2 className="text-primary text-center text-xl font-bold mt-6">Enjoy organizing your reading journey with ease!</h2>
+            <h2 className="text-primary text-center text-xl font-bold mt-6">Enjoy organizing your library!</h2>
           </div>
         </div>
       ) : (
@@ -378,7 +417,7 @@ const loadUserData = async (uid: string) => {
                 </button>
               </div>
               <select
-                className="select select-bordered"
+                className="select select-bordered flex flex-auto px-3 mx-4"
                 onChange={(e) => setFilterTag(e.target.value)}
               >
                 <option value="">All</option>
@@ -394,18 +433,19 @@ const loadUserData = async (uid: string) => {
               {filteredBooks.map((book) => (
                 <li
                   key={book.id}
-                  className={`flex justify-between items-center p-3 mb-2 rounded-md ${
-                    book.tags?.includes("Philosophy") ? "border-2 border-primary bg-transparent text-primary" :
-                    book.tags?.includes("Theology") ? "border-2 border-accent bg-transparent text-accent" :
-                    book.tags?.includes("History") ? "border-2 border-secondary bg-transparent text-secondary" :
-                    book.tags?.includes("Sociology") ? "border-2 border-accent bg-transparent text-accent" :
-                    book.tags?.includes("Anthropology") ? "border-2 border-purple-500 bg-transparent text-purple-500" :
-                    book.tags?.includes("Literature") ? "border-2 border-pink-500 bg-transparent text-pink-500" :
-                    book.tags?.includes("Logic") ? "border-2 border-orange-500 bg-transparent text-orange-500" :
-                    book.tags?.includes("Politics") ? "border-2 border-red-500 bg-transparent text-red-500" :
-                    book.tags?.includes("Economics") ? "border-2 border-blue-500 bg-transparent text-blue-500" :
-                    book.tags?.includes("Postcolonial Studies") ? "border-2 border-green-500 bg-transparent text-green-500" :
-                    book.tags?.includes("History of Philosophy") ? "border-2 border-blue-500 bg-transparent text-blue-500" : "border-2 border-primary bg-transparent text-primary"
+                  onClick={() => handleBookClick(book)}
+                  className={`flex justify-between items-center p-3 mb-2 rounded-md cursor-pointer transition-colors duration-200 ${
+                    book.tags?.includes("Philosophy") ? "border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-white" :
+                    book.tags?.includes("Theology") ? "border-2 border-accent bg-transparent text-accent hover:bg-accent hover:text-white" :
+                    book.tags?.includes("History") ? "border-2 border-secondary bg-transparent text-secondary hover:bg-secondary hover:text-white" :
+                    book.tags?.includes("Sociology") ? "border-2 border-accent bg-transparent text-accent hover:bg-accent hover:text-white" :
+                    book.tags?.includes("Anthropology") ? "border-2 border-purple-500 bg-transparent text-purple-500 hover:bg-purple-500 hover:text-white" :
+                    book.tags?.includes("Literature") ? "border-2 border-pink-500 bg-transparent text-pink-500 hover:bg-pink-500 hover:text-white" :
+                    book.tags?.includes("Logic") ? "border-2 border-orange-500 bg-transparent text-orange-500 hover:bg-orange-500 hover:text-white" :
+                    book.tags?.includes("Politics") ? "border-2 border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white" :
+                    book.tags?.includes("Economics") ? "border-2 border-blue-500 bg-transparent text-blue-500 hover:bg-blue-500 hover:text-white" :
+                    book.tags?.includes("Postcolonial Studies") ? "border-2 border-green-500 bg-transparent text-green-500 hover:bg-green-500 hover:text-white" :
+                    book.tags?.includes("History of Philosophy") ? "border-2 border-blue-500 bg-transparent text-blue-500 hover:bg-blue-500 hover:text-white" : "border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-white"
                   }`}
                 >
                   <div>
@@ -550,6 +590,70 @@ const loadUserData = async (uid: string) => {
           </div>
         </div>
       )}
+
+      {isModalOpen && selectedBook && (
+        <BookEditModal
+          book={selectedBook}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveBook}
+        />
+      )}
+    </div>
+  );
+};
+
+const BookEditModal: React.FC<{ book: Book; onClose: () => void; onSave: (updatedBook: Book) => void }> = ({ book, onClose, onSave }) => {
+  const [editedBook, setEditedBook] = useState(book);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditedBook((prev) => ({
+      ...prev,
+      [name]: name === "price" ? parseFloat(value) || 0 : value,
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-base-200 bg-opacity-50 flex justify-center items-center">
+      <div className="bg-base-200 p-5 rounded-lg shadow-lg w-2/6 max-w-full">
+        <h2 className="text-xl font-bold mb-4 text-center">Edit Book</h2>
+        <div className="form-control mb-4">
+          <label className="label">Book Title</label>
+          <input
+            type="text"
+            name="name"
+            value={editedBook.name}
+            onChange={handleChange}
+            className="input input-bordered"
+          />
+        </div>
+        <div className="form-control mb-4">
+          <label className="label">Author</label>
+          <input
+            type="text"
+            name="author"
+            value={editedBook.author || ""}
+            onChange={handleChange}
+            className="input input-bordered"
+          />
+        </div>
+        <div className="form-control mb-4">
+          <label className="label">Price (£)</label>
+          <input
+            type="number"
+            name="price"
+            value={editedBook.price}
+            onChange={handleChange}
+            className="input input-bordered"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div className="flex justify-end space-x-4">
+          <button onClick={onClose} className="btn btn-secondary">Cancel</button>
+          <button onClick={() => onSave(editedBook)} className="btn btn-primary">Save</button>
+        </div>
+      </div>
     </div>
   );
 };
