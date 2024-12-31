@@ -3,7 +3,9 @@ export interface Book {
     title: string;
     price: number;
     isRead: boolean;
+    author?: string;    
     category?: string;
+    tags?: string[];
 }
 
 export interface BookToBuy {

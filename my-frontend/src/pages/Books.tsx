@@ -5,6 +5,7 @@ import { Book } from "../models/Book";
 const Books: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
   const [price, setPrice] = useState(0);
   const [isRead, setIsRead] = useState(false);
 
@@ -17,7 +18,7 @@ const Books: React.FC = () => {
   }, []);
 
   const handleAddBook = async () => {
-    const newBook: Book = { id: "", title, price, isRead };
+    const newBook: Book = { id: "", title, author, price, isRead };
     await addBook(newBook);
     setBooks([...books, newBook]);
   };
@@ -36,6 +37,12 @@ const Books: React.FC = () => {
           placeholder="Book Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Author"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
         />
         <input
           type="number"

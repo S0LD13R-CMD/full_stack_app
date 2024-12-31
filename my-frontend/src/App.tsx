@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
 import { app, db } from "./firebase-config";
 import { doc, setDoc, getDoc, collection, deleteDoc } from "firebase/firestore";
+import "./index.css";
 
 interface Book {
   id: number;
   name: string;
   price: number;
   author?: string;
+  tags?: string[];
 }
 
 const App: React.FC = () => {
@@ -32,6 +34,7 @@ const App: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [filterTag, setFilterTag] = useState("");
 
   const auth = getAuth(app); // Initialize Firebase Authentication
 
@@ -270,6 +273,21 @@ const loadUserData = async (uid: string) => {
   }
 };
 
+  const filteredBooks = (view === "owned" ? booksOwned : booksToBuy).filter((book) =>
+    filterTag ? book.tags?.includes(filterTag) : true
+  );
+
+  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>, tag: string) => {
+    setBookInput((prev) => {
+      const tags = prev.tags || [];
+      if (e.target.checked) {
+        return { ...prev, tags: [...tags, tag] };
+      } else {
+        return { ...prev, tags: tags.filter((t) => t !== tag) };
+      }
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col px-8 py-4">
       {!isAuthenticated ? (
@@ -340,9 +358,9 @@ const loadUserData = async (uid: string) => {
           </div>
         </div>
       ) : (
-        <div className="flex h-screen p-4 gap-4">
+        <div className="flex h-screen py-6 gap-4">
           {/* Left Half - Book List */}
-          <div className="w-1/2 p-4 bg-base-200 border border-primary rounded-lg shadow-md overflow-auto max-h-screen scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-200">
+          <div className="w-1/2 p-4 bg-base-200 border-2 border-primary rounded-lg shadow-md overflow-auto">
             <div className="flex justify-between items-center mb-4">
               {/* Toggle Buttons on the Left */}
               <div className="flex gap-2">
@@ -359,24 +377,45 @@ const loadUserData = async (uid: string) => {
                   Books to Buy
                 </button>
               </div>
-              {/* Total Value on the Right */}
+              <select
+                className="select select-bordered"
+                onChange={(e) => setFilterTag(e.target.value)}
+              >
+                <option value="">All</option>
+                {["Philosophy", "Theology", "History", "Sociology", "Anthropology", "Literature", "Logic", "Politics", "Economics", "History of Philosophy", "Postcolonial Studies"].map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
               <div className="text-lg font-bold">
                 Total: £{totalValue.toFixed(2)}
               </div>
             </div>
             <ul className="space-y-4">
-              {(view === "owned" ? booksOwned : booksToBuy).map((book) => (
+              {filteredBooks.map((book) => (
                 <li
                   key={book.id}
-                  className="flex justify-between items-center p-3 mb-2 rounded-md bg-primary text-primary-content"
+                  className={`flex justify-between items-center p-3 mb-2 rounded-md ${
+                    book.tags?.includes("Philosophy") ? "border-2 border-primary bg-transparent text-primary" :
+                    book.tags?.includes("Theology") ? "border-2 border-accent bg-transparent text-accent" :
+                    book.tags?.includes("History") ? "border-2 border-secondary bg-transparent text-secondary" :
+                    book.tags?.includes("Sociology") ? "border-2 border-accent bg-transparent text-accent" :
+                    book.tags?.includes("Anthropology") ? "border-2 border-purple-500 bg-transparent text-purple-500" :
+                    book.tags?.includes("Literature") ? "border-2 border-pink-500 bg-transparent text-pink-500" :
+                    book.tags?.includes("Logic") ? "border-2 border-orange-500 bg-transparent text-orange-500" :
+                    book.tags?.includes("Politics") ? "border-2 border-red-500 bg-transparent text-red-500" :
+                    book.tags?.includes("Economics") ? "border-2 border-blue-500 bg-transparent text-blue-500" :
+                    book.tags?.includes("Postcolonial Studies") ? "border-2 border-green-500 bg-transparent text-green-500" :
+                    book.tags?.includes("History of Philosophy") ? "border-2 border-blue-500 bg-transparent text-blue-500" : "border-2 border-primary bg-transparent text-primary"
+                  }`}
                 >
                   <div>
                     <p className="font-bold">{book.name}</p>
+                    {book.author && <p>Author: {book.author}</p>}
                     <p>Price: £{book.price.toFixed(2)}</p>
                   </div>
                   <button
                     onClick={() => handleDeleteBook(book.id)}
-                    className="text-primary-content hover:text-red-600"
+                    className="text-white hover:text-red-600"
                   >
                     &#x2716; {/* Cross symbol */}
                   </button>
@@ -388,52 +427,76 @@ const loadUserData = async (uid: string) => {
           {/* Right Half */}
           <div className="w-1/2 flex flex-col gap-4">
             {/* Top Right - To-read Section (Book List View) */}
-            <div className="p-4 bg-base-200 border border-primary rounded-lg shadow-md flex-1 overflow-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-200">
+            <div className="p-4 bg-base-200 border-2 border-primary rounded-lg shadow-md flex-1 overflow-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-200">
               <textarea
                 onChange={handleNoteChange}
                 className="textarea textarea-bordered w-full resize-none"
                 placeholder="Type your notes here..."
                 value={toReadNotes}
-                style={{ minHeight: "265px" }} // Ensures a consistent minimum height
+                style={{ minHeight: "310px" }}
               />
             </div>
 
             {/* Bottom Right - Toggle Buttons and Input Fields */}
-            <div className="p-4 bg-base-200 border border-primary rounded-lg shadow-md space-y-5">
+            <div className="p-4 bg-base-200 border-2 border-primary rounded-lg shadow-md space-y-5">
               <form onSubmit={handleFormSubmit} className="space-y-3">
-                <div className="form-control">
-                  <label className="label">Book Title</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={bookInput.name}
-                    onChange={handleInputChange}
-                    className="input input-bordered"
-                    required
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label">Author (Optional)</label>
-                  <input
-                    type="text"
-                    name="author"
-                    value={bookInput.author || ""}
-                    onChange={handleInputChange}
-                    className="input input-bordered"
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label">Price (£)</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={bookInput.price || ""}
-                    onChange={handleInputChange}
-                    className="input input-bordered"
-                    step="0.01"
-                    min="0"
-                    required
-                  />
+                <div className="flex">
+                  {/* Left Half - Tags */}
+                  <div className="w-1/3 rounded-lg p-2 py-8">
+                    <label className="label">Tags</label>
+                    <div className="flex flex-col gap-2 overflow-y-auto h-40">
+                      {["Philosophy", "Theology", "History", "Sociology", "Anthropology", "Literature", "Logic", "Politics", "Economics", "History of Philosophy", "Postcolonial Studies"].map((tag) => (
+                        <label key={tag} className="cursor-pointer flex items-center">
+                          <input
+                            type="checkbox"
+                            value={tag}
+                            checked={bookInput.tags?.includes(tag)}
+                            onChange={(e) => handleTagChange(e, tag)}
+                            className="mr-2"
+                          />
+                          {tag}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Half - Book Details */}
+                  <div className="w-2/3">
+                    <div className="form-control">
+                      <label className="label">Book Title</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={bookInput.name}
+                        onChange={handleInputChange}
+                        className="input input-bordered"
+                        required
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">Author (Optional)</label>
+                      <input
+                        type="text"
+                        name="author"
+                        value={bookInput.author || ""}
+                        onChange={handleInputChange}
+                        className="input input-bordered"
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">Price (£)</label>
+                      <input
+                        type="number"
+                        name="price"
+                        value={bookInput.price || ""}
+                        onChange={handleInputChange}
+                        className="input input-bordered"
+                        step="0.01"
+                        min="0"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-between items-center">
