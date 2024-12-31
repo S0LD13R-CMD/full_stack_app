@@ -3,7 +3,7 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWith
 import { app, db } from "./firebase-config";
 import { doc, setDoc, getDoc, collection, deleteDoc, updateDoc } from "firebase/firestore";
 import "./index.css";
-
+import ErrorModal from "./components/ErrorModal";
 interface Book {
   id: number;
   name: string;
@@ -37,6 +37,8 @@ const App: React.FC = () => {
   const [filterTag, setFilterTag] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const auth = getAuth(app); // Initialize Firebase Authentication
 
@@ -64,8 +66,9 @@ const App: React.FC = () => {
       .then(() => {
         setIsAuthenticated(true); // Successful login
       })
-      .catch((error) => {
-        alert(error.message); // Display error message
+      .catch(() => {
+        setErrorMessage("Login failed. Please check your email and password.");
+        setErrorModalOpen(true);
       });
   };
 
@@ -596,6 +599,13 @@ const loadUserData = async (uid: string) => {
           book={selectedBook}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveBook}
+        />
+      )}
+
+      {errorModalOpen && (
+        <ErrorModal
+          message={errorMessage}
+          onClose={() => setErrorModalOpen(false)}
         />
       )}
     </div>

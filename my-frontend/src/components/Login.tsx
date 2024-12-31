@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { app } from "../firebase-config"; // Correct the import path
+import { app } from "../firebase-config";
+import ErrorModal from "./ErrorModal";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [isRegistering, setIsRegistering] = useState<boolean>(false); // New state for toggle
-  const auth = getAuth(app); // Initialize Firebase Auth
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
+  const auth = getAuth(app);
+  const [showErrorModal, setShowErrorModal] = useState<boolean>(false);
 
-  // Handle login submission
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -17,13 +18,13 @@ const Login: React.FC = () => {
       console.log("User logged in successfully!");
     } catch (error: unknown) {
       if (error instanceof Error) {
-        setError("Failed to log in. Please check your credentials.");
+        setError("Invalid email or password. Please try again.");
+        setShowErrorModal(true);
         console.error("Login error:", error.message);
       }
     }
   };
 
-  // Handle registration submission
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -31,7 +32,8 @@ const Login: React.FC = () => {
       console.log("User registered successfully!");
     } catch (error: unknown) {
       if (error instanceof Error) {
-        setError("Failed to register. Please check your credentials.");
+        setError("Registration failed. Please try again.");
+        setShowErrorModal(true);
         console.error("Registration error:", error.message);
       }
     }
@@ -65,7 +67,6 @@ const Login: React.FC = () => {
             required
           />
         </div>
-        {error && <p className="text-red-500">{error}</p>}
         <div className="form-control">
           <button type="submit" className="btn btn-primary">
             {isRegistering ? "Register" : "Log In"}
@@ -80,6 +81,13 @@ const Login: React.FC = () => {
           {isRegistering ? "Already have an account? Log In" : "Don't have an account? Register"}
         </button>
       </div>
+
+      {showErrorModal && (
+        <ErrorModal 
+          message={error} 
+          onClose={() => setShowErrorModal(false)} 
+        />
+      )}
     </div>
   );
 };
