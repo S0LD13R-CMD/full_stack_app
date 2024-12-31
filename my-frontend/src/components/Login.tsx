@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { app } from "../firebase-config";
-import ErrorModal from "./ErrorModal";
+import ErrorModal from "./ErrorMessage";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>("");

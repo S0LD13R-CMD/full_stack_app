@@ -3,7 +3,7 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWith
 import { app, db } from "./firebase-config";
 import { doc, setDoc, getDoc, collection, deleteDoc, updateDoc } from "firebase/firestore";
 import "./index.css";
-import ErrorModal from "./components/ErrorModal";
+import ErrorModal from "./components/ErrorMessage";
 interface Book {
   id: number;
   name: string;
@@ -331,7 +331,7 @@ const loadUserData = async (uid: string) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col px-8 py-4">
+    <div className="font-sans min-h-screen flex flex-col px-8 py-4">
       {!isAuthenticated ? (
         <div className="flex justify-center items-center h-screen space-x-8">
           {/* Login Form */}
@@ -387,7 +387,7 @@ const loadUserData = async (uid: string) => {
           </div>
 
           {/* Website Details */}
-          <div className="p-5 bg-base-200 border-primary border-2 rounded-lg shadow-md w-1/2">
+          <div className="font-sans p-5 bg-base-200 border-primary border-2 rounded-lg shadow-md w-1/2">
             <h1 className="text-primary text-center text-2xl font-bold mb-6">Welcome to the Book Collection Manager! Here you can:</h1>
             <ol className="text-primary list-decimal list-inside ml-9">
               <li>Manage your personal library</li>
@@ -400,9 +400,9 @@ const loadUserData = async (uid: string) => {
           </div>
         </div>
       ) : (
-        <div className="flex h-screen py-6 gap-4">
+        <div className="font-sans flex h-screen py-6 gap-4">
           {/* Left Half - Book List */}
-          <div className="w-1/2 p-4 bg-base-200 border-2 border-primary rounded-lg shadow-md overflow-auto">
+          <div className="font-sans w-1/2 p-4 bg-base-200 border-2 border-primary rounded-lg shadow-md overflow-auto">
             <div className="flex justify-between items-center mb-4">
               {/* Toggle Buttons on the Left */}
               <div className="flex gap-2">
@@ -468,15 +468,15 @@ const loadUserData = async (uid: string) => {
           </div>
 
           {/* Right Half */}
-          <div className="w-1/2 flex flex-col gap-4">
-            {/* Top Right - To-read Section (Book List View) */}
-            <div className="p-4 bg-base-200 border-2 border-primary rounded-lg shadow-md flex-1 overflow-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-200">
+          <div className="font-sans w-1/2 flex flex-col gap-4">
+            {/* Top Right - To-read Section */}
+            <div className="font-sans bg-base-500 border-2 border-primary rounded-lg shadow-md flex-1 overflow-auto max-h-[calc(100vh-200px)]">
               <textarea
                 onChange={handleNoteChange}
-                className="textarea textarea-bordered w-full resize-none"
+                className="textarea w-full resize-none"
                 placeholder="Type your notes here..."
                 value={toReadNotes}
-                style={{ minHeight: "310px" }}
+                style={{ minHeight: "350px" }}
               />
             </div>
 
@@ -504,7 +504,7 @@ const loadUserData = async (uid: string) => {
                   </div>
 
                   {/* Right Half - Book Details */}
-                  <div className="w-2/3">
+                  <div className="font-sans w-2/3">
                     <div className="form-control">
                       <label className="label">Book Title</label>
                       <input
@@ -542,7 +542,7 @@ const loadUserData = async (uid: string) => {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="font-sans flex justify-between items-center">
                   <label className="cursor-pointer">
                     <input
                       type="checkbox"
@@ -581,12 +581,12 @@ const loadUserData = async (uid: string) => {
                   )}
                 </div>
 
-                <button type="submit" className="btn btn-primary w-full">
+                <button type="submit" className="font-sans btn btn-primary w-full">
                   {isJournal ? "Add Journal" : "Add Book"}
                 </button>
               </form>
 
-              <button onClick={handleLogout} className="btn btn-secondary btn-outline w-full p-4">
+              <button onClick={handleLogout} className="font-sans btn btn-secondary btn-outline w-full p-4">
                 Logout
               </button>
             </div>
@@ -624,8 +624,8 @@ const BookEditModal: React.FC<{ book: Book; onClose: () => void; onSave: (update
   };
 
   return (
-    <div className="fixed inset-0 bg-base-200 bg-opacity-50 flex justify-center items-center">
-      <div className="bg-base-200 p-5 rounded-lg shadow-lg w-2/6 max-w-full">
+    <div className="font-sans fixed inset-0 bg-base-200 bg-opacity-50 flex justify-center items-center">
+      <div className="font-sans bg-base-200 p-5 rounded-lg shadow-lg w-2/6 max-w-full">
         <h2 className="text-xl font-bold mb-4 text-center">Edit Book</h2>
         <div className="form-control mb-4">
           <label className="label">Book Title</label>
