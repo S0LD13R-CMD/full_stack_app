@@ -1,4 +1,7 @@
-const Navbar: React.FC = () => {
+import React from "react";
+
+class NavBar extends React.Component {
+  render() {
     return (
       <nav className="navbar bg-base-100 shadow-md">
         <div className="flex-1">
@@ -9,6 +12,7 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
     );
-  };
-  
-  export default Navbar;
+  }
+}
+
+export default NavBar;

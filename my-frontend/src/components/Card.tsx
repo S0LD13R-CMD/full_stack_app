@@ -1,11 +1,15 @@
+import React from "react";
+
 interface CardProps {
-    title: string;
-    author: string;
-    price: number;
-    colorClass: string; // Tailwind color class
-  }
-  
-  const Card: React.FC<CardProps> = ({ title, author, price, colorClass }) => {
+  title: string;
+  author: string;
+  price: number;
+  colorClass: string; // Tailwind color class
+}
+
+class Card extends React.Component<CardProps> {
+  render() {
+    const { title, author, price, colorClass } = this.props;
     return (
       <div className={`card ${colorClass} shadow-xl`}>
         <div className="card-body">
@@ -18,6 +22,7 @@ interface CardProps {
         </div>
       </div>
     );
-  };
-  
-  export default Card;
+  }
+}
+
+export default Card;
