@@ -3,7 +3,9 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } f
 import { app } from "../firebase-config";
 import ErrorModal from "./ErrorMessage";
 
+// Functional component for handling user login and registration
 const Login: React.FC = () => {
+  // State variables for managing form inputs and error handling
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -11,6 +13,7 @@ const Login: React.FC = () => {
   const auth = getAuth(app);
   const [showErrorModal, setShowErrorModal] = useState<boolean>(false);
 
+  // Function to handle user login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -25,6 +28,7 @@ const Login: React.FC = () => {
     }
   };
 
+  // Function to handle user registration
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {

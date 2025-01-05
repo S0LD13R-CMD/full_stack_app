@@ -4,6 +4,8 @@ import { app, db } from "./firebase-config";
 import { doc, setDoc, getDoc, collection, deleteDoc, updateDoc } from "firebase/firestore";
 import "./index.css";
 import ErrorModal from "./components/ErrorMessage";
+
+// Define the Book interface to structure book data
 interface Book {
   id: number;
   name: string;
@@ -13,6 +15,7 @@ interface Book {
 }
 
 const App: React.FC = () => {
+  // State variables to manage application state
   const [view, setView] = useState<"owned" | "to-buy">("owned");
   const [booksOwned, setBooksOwned] = useState<Book[]>([]);
   const [booksToBuy, setBooksToBuy] = useState<Book[]>([]);
@@ -42,12 +45,13 @@ const App: React.FC = () => {
 
   const auth = getAuth(app); // Initialize Firebase Authentication
 
+  // Effect to handle authentication state changes
   useEffect(() => {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsAuthenticated(true);
   
-        // Load user data
+        // Load user data from Firestore
         const userData = await loadUserData(user.uid);
         if (userData) {
           setBooksOwned(userData.booksOwned || []);
@@ -60,6 +64,7 @@ const App: React.FC = () => {
     });
   }, [auth]);
 
+  // Handle user login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     signInWithEmailAndPassword(auth, email, password)
@@ -72,12 +77,14 @@ const App: React.FC = () => {
       });
   };
 
+  // Handle user logout
   const handleLogout = () => {
     auth.signOut().then(() => {
       setIsAuthenticated(false); // Log out the user
     });
   };
 
+  // Handle changes in book input fields
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setBookInput((prev) => ({
@@ -86,6 +93,7 @@ const App: React.FC = () => {
     }));
   };
 
+  // Handle changes in volume range input fields
   const handleVolumeRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVolumeRange((prev) => ({
@@ -94,6 +102,7 @@ const App: React.FC = () => {
     }));
   };
 
+  // Add a new book to the user's collection
   const handleAddBook = async () => {
     if (auth.currentUser) {
       const user = auth.currentUser;
@@ -131,6 +140,7 @@ const App: React.FC = () => {
     }
   };
 
+  // Add a journal entry with multiple volumes
   const handleAddJournal = async () => {
     const volumes = volumeRange.end - volumeRange.start + 1;
     const books: Book[] = [];
@@ -183,6 +193,7 @@ const App: React.FC = () => {
     setVolumeRange({ start: 1, end: 1 });
   };
 
+  // Handle changes in the notes textarea
   const handleNoteChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const updatedNotes = e.target.value;
     setToReadNotes(updatedNotes);
@@ -193,6 +204,7 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle form submission for adding books or journals
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault(); // Prevent default form submission
     if (isJournal) {
@@ -202,6 +214,7 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle user registration
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     createUserWithEmailAndPassword(auth, registerEmail, registerPassword)
@@ -213,6 +226,7 @@ const App: React.FC = () => {
       });
   };
 
+  // Delete a book from the user's collection
   const handleDeleteBook = async (id: number) => {
     if (auth.currentUser) {
       const user = auth.currentUser;
@@ -242,46 +256,49 @@ const App: React.FC = () => {
     }
   };
   
+  // Calculate the total value of books in the current view
   const totalValue = (view === "owned" ? booksOwned : booksToBuy).reduce(
     (sum, book) => sum + book.price,
     0
   );
 
-  // Save user data (books and notes)
-const saveUserData = async (uid: string, booksOwned: Book[], booksToBuy: Book[], notes: string) => {
-  try {
-    await setDoc(doc(db, "users", uid), {
-      booksOwned,
-      booksToBuy,
-      notes,
-    });
-  } catch (error) {
-    console.error("Error saving user data:", error);
-  }
-};
+  // Save user data (books and notes) to Firestore
+  const saveUserData = async (uid: string, booksOwned: Book[], booksToBuy: Book[], notes: string) => {
+    try {
+      await setDoc(doc(db, "users", uid), {
+        booksOwned,
+        booksToBuy,
+        notes,
+      });
+    } catch (error) {
+      console.error("Error saving user data:", error);
+    }
+  };
 
-// Load user data
-const loadUserData = async (uid: string) => {
-  try {
-    const docRef = doc(db, "users", uid);
-    const docSnap = await getDoc(docRef);
+  // Load user data from Firestore
+  const loadUserData = async (uid: string) => {
+    try {
+      const docRef = doc(db, "users", uid);
+      const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      return docSnap.data();
-    } else {
-      console.log("No user data found!");
+      if (docSnap.exists()) {
+        return docSnap.data();
+      } else {
+        console.log("No user data found!");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
       return null;
     }
-  } catch (error) {
-    console.error("Error loading user data:", error);
-    return null;
-  }
-};
+  };
 
+  // Filter books based on the selected tag
   const filteredBooks = (view === "owned" ? booksOwned : booksToBuy).filter((book) =>
     filterTag ? book.tags?.includes(filterTag) : true
   );
 
+  // Handle changes in book tags
   const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>, tag: string) => {
     setBookInput((prev) => {
       const tags = prev.tags || [];
@@ -293,11 +310,13 @@ const loadUserData = async (uid: string) => {
     });
   };
 
+  // Handle book click to open the edit modal
   const handleBookClick = (book: Book) => {
     setSelectedBook(book);
     setIsModalOpen(true);
   };
 
+  // Save the updated book details
   const handleSaveBook = async (updatedBook: Book) => {
     if (!auth.currentUser) {
       console.error("User not authenticated");
@@ -612,6 +631,7 @@ const loadUserData = async (uid: string) => {
   );
 };
 
+// Modal component for editing book details
 const BookEditModal: React.FC<{ book: Book; onClose: () => void; onSave: (updatedBook: Book) => void }> = ({ book, onClose, onSave }) => {
   const [editedBook, setEditedBook] = useState(book);
 
