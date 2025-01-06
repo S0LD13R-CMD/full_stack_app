@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getBooks, addBook, deleteBook } from "../services/bookService";
 import { Book } from "../models/Book";
 
@@ -8,6 +8,7 @@ const Books: React.FC = () => {
   const [author, setAuthor] = useState("");
   const [price, setPrice] = useState(0);
   const [isRead, setIsRead] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -21,11 +22,26 @@ const Books: React.FC = () => {
     const newBook: Book = { id: "", title, author, price, isRead };
     await addBook(newBook);
     setBooks([...books, newBook]);
+    setTitle("");
+    setAuthor("");
+    setPrice(0);
+    setIsRead(false);
   };
 
   const handleDeleteBook = async (id: string) => {
     await deleteBook(id);
     setBooks(books.filter((book) => book.id !== id));
+  };
+
+  const handleJsonInput = async () => {
+    try {
+      const book: Book = JSON.parse(jsonInput);
+      await addBook(book);
+      setBooks([...books, book]);
+      setJsonInput("");
+    } catch (error) {
+      console.error("Invalid JSON input", error);
+    }
   };
 
   return (
@@ -59,6 +75,14 @@ const Books: React.FC = () => {
           Read
         </label>
         <button onClick={handleAddBook}>Add Book</button>
+      </div>
+      <div>
+        <textarea
+          placeholder="Enter book JSON"
+          value={jsonInput}
+          onChange={(e) => setJsonInput(e.target.value)}
+        />
+        <button onClick={handleJsonInput}>Add Book from JSON</button>
       </div>
       <ul>
         {books.map((book) => (

@@ -42,6 +42,7 @@ const App: React.FC = () => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [jsonInput, setJsonInput] = useState("");
 
   const auth = getAuth(app); // Initialize Firebase Authentication
 
@@ -123,12 +124,6 @@ const App: React.FC = () => {
         ? [...existingBooksOwned, newBook]
         : [...existingBooksToBuy, newBook];
 
-      if (view === "owned") {
-        setBooksOwned(updatedBooks);
-      } else {
-        setBooksToBuy(updatedBooks);
-      }
-
       // Save updated data to Firestore
       await setDoc(userDocRef, {
         booksOwned: view === "owned" ? updatedBooks : existingBooksOwned,
@@ -136,6 +131,14 @@ const App: React.FC = () => {
         notes: toReadNotes
       });
 
+      // Update local state only after Firestore update
+      if (view === "owned") {
+        setBooksOwned(updatedBooks);
+      } else {
+        setBooksToBuy(updatedBooks);
+      }
+
+      // Reset book input
       setBookInput({ id: Date.now(), name: "", price: 0, author: "" });
     }
   };
@@ -347,6 +350,74 @@ const App: React.FC = () => {
     }
 
     setIsModalOpen(false);
+  };
+
+  const handleJsonInput = async () => {
+    try {
+      console.log("JSON Input:", jsonInput); // Log the input JSON
+      const book: Book = JSON.parse(jsonInput);
+      console.log("Parsed Book:", book); // Log the parsed book object
+      await addBook(book);
+      setBooksOwned((prevBooks) => [...prevBooks, book]);
+      setJsonInput("");
+    } catch (error) {
+      console.error("Invalid JSON input", error);
+    }
+  };
+
+  // Handle file upload and parse JSON
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const text = event.target?.result as string;
+          const booksArray: Book[] = JSON.parse(text);
+          for (const book of booksArray) {
+            await addBook(book);
+          }
+          setBooksOwned((prevBooks) => [...prevBooks, ...booksArray]);
+        } catch (error) {
+          console.error("Invalid JSON file", error);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const addBook = async (book: Book) => {
+    if (auth.currentUser) {
+      const user = auth.currentUser;
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let existingBooksOwned = [];
+      let existingBooksToBuy = [];
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        existingBooksOwned = userData.booksOwned || [];
+        existingBooksToBuy = userData.booksToBuy || [];
+      }
+
+      const updatedBooks = view === "owned"
+        ? [...existingBooksOwned, book]
+        : [...existingBooksToBuy, book];
+
+      if (view === "owned") {
+        setBooksOwned(updatedBooks);
+      } else {
+        setBooksToBuy(updatedBooks);
+      }
+
+      // Save updated data to Firestore
+      await setDoc(userDocRef, {
+        booksOwned: view === "owned" ? updatedBooks : existingBooksOwned,
+        booksToBuy: view === "to-buy" ? updatedBooks : existingBooksToBuy,
+        notes: toReadNotes
+      });
+    }
   };
 
   return (
@@ -604,6 +675,22 @@ const App: React.FC = () => {
                   {isJournal ? "Add Journal" : "Add Book"}
                 </button>
               </form>
+
+              <div className="flex justify-between mt-4">
+                <button onClick={handleJsonInput} className="btn btn-secondary w-full">
+                  Add Book with JSON
+                </button>
+              </div>
+
+              <div className="mt-4">
+                <textarea
+                  placeholder="Enter book JSON"
+                  value={jsonInput}
+                  onChange={(e) => setJsonInput(e.target.value)}
+                  className="textarea w-full"
+                />
+                <input type="file" accept=".json" onChange={handleFileUpload} className="mt-2" />
+              </div>
 
               <button onClick={handleLogout} className="font-sans btn btn-secondary btn-outline w-full p-4">
                 Logout
